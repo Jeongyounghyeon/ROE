@@ -13,20 +13,15 @@ import org.springframework.statemachine.StateMachineEventResult.ResultType.ACCEP
 import org.springframework.statemachine.config.StateMachineFactory
 import org.springframework.statemachine.support.DefaultStateMachineContext
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 import reactor.core.publisher.Mono
 import java.util.UUID
 
 @Service
-@Transactional
 class OrderCommandService(
     private val orderRepository: OrderRepository,
     private val stateMachineFactory: StateMachineFactory<OrderStatus, OrderEvent>,
 ) {
-    fun createOrder(): Order {
-        val order = Order.create()
-        return orderRepository.save(order)
-    }
+    fun createOrder(): Order = orderRepository.save(Order.create())
 
     fun processEvent(orderId: UUID, event: OrderEvent): Order {
         val order = orderRepository.findById(orderId)
