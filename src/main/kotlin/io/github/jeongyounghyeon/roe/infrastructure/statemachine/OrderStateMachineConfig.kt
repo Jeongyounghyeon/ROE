@@ -28,7 +28,9 @@ import org.springframework.statemachine.config.builders.StateMachineTransitionCo
 
 @Configuration
 @EnableStateMachineFactory
-class OrderStateMachineConfig : StateMachineConfigurerAdapter<OrderStatus, OrderEvent>() {
+class OrderStateMachineConfig(
+    private val actions: OrderStateMachineActions,
+) : StateMachineConfigurerAdapter<OrderStatus, OrderEvent>() {
 
     override fun configure(states: StateMachineStateConfigurer<OrderStatus, OrderEvent>) {
         states.withStates()
@@ -40,19 +42,20 @@ class OrderStateMachineConfig : StateMachineConfigurerAdapter<OrderStatus, Order
     }
 
     override fun configure(transitions: StateMachineTransitionConfigurer<OrderStatus, OrderEvent>) {
+        val action = actions.changeStatus
         transitions
             // 정상 주문 플로우
-            .withExternal().source(PENDING_PAYMENT).target(PAYMENT_PROCESSING).event(REQUEST_PAY).and()
-            .withExternal().source(PAYMENT_PROCESSING).target(PAID).event(PAY_SUCCESS).and()
-            .withExternal().source(PAYMENT_PROCESSING).target(FAILED).event(PAY_FAIL).and()
-            .withExternal().source(PAID).target(PREPARING).event(ACCEPT_ORDER).and()
-            .withExternal().source(PREPARING).target(SHIPPED).event(DISPATCH).and()
-            .withExternal().source(SHIPPED).target(DELIVERED).event(DELIVER).and()
+            .withExternal().source(PENDING_PAYMENT).target(PAYMENT_PROCESSING).event(REQUEST_PAY).action(action).and()
+            .withExternal().source(PAYMENT_PROCESSING).target(PAID).event(PAY_SUCCESS).action(action).and()
+            .withExternal().source(PAYMENT_PROCESSING).target(FAILED).event(PAY_FAIL).action(action).and()
+            .withExternal().source(PAID).target(PREPARING).event(ACCEPT_ORDER).action(action).and()
+            .withExternal().source(PREPARING).target(SHIPPED).event(DISPATCH).action(action).and()
+            .withExternal().source(SHIPPED).target(DELIVERED).event(DELIVER).action(action).and()
             // 취소/환불 플로우 (PAYMENT_PROCESSING, SHIPPED 는 의도적으로 제외)
-            .withExternal().source(PENDING_PAYMENT).target(CANCELED).event(CANCEL_REQUEST).and()
-            .withExternal().source(PAID).target(REFUNDING).event(CANCEL_REQUEST).and()
-            .withExternal().source(PREPARING).target(REFUNDING).event(CANCEL_REQUEST).and()
-            .withExternal().source(DELIVERED).target(REFUNDING).event(CANCEL_REQUEST).and()
-            .withExternal().source(REFUNDING).target(REFUNDED).event(REFUND_SUCCESS)
+            .withExternal().source(PENDING_PAYMENT).target(CANCELED).event(CANCEL_REQUEST).action(action).and()
+            .withExternal().source(PAID).target(REFUNDING).event(CANCEL_REQUEST).action(action).and()
+            .withExternal().source(PREPARING).target(REFUNDING).event(CANCEL_REQUEST).action(action).and()
+            .withExternal().source(DELIVERED).target(REFUNDING).event(CANCEL_REQUEST).action(action).and()
+            .withExternal().source(REFUNDING).target(REFUNDED).event(REFUND_SUCCESS).action(action)
     }
 }
