@@ -1,5 +1,6 @@
 package io.github.jeongyounghyeon.roe.application.order
 
+import io.github.jeongyounghyeon.roe.application.event.OrderDomainEventPublisher
 import io.github.jeongyounghyeon.roe.application.lock.DistributedLockManager
 import io.github.jeongyounghyeon.roe.application.order.exception.OrderNotFoundException
 import io.github.jeongyounghyeon.roe.domain.order.Order
@@ -23,6 +24,7 @@ class OrderCommandService(
     private val orderRepository: OrderRepository,
     private val stateMachineFactory: StateMachineFactory<OrderStatus, OrderEvent>,
     private val lockManager: DistributedLockManager,
+    private val eventPublisher: OrderDomainEventPublisher,
 ) {
     fun createOrder(): Order = orderRepository.save(Order.create())
 
@@ -45,7 +47,9 @@ class OrderCommandService(
                 throw InvalidOrderStateTransitionException(order.status, event)
             }
 
-            orderRepository.save(order)
+            val savedOrder = orderRepository.save(order)
+            eventPublisher.publish(savedOrder, event)
+            savedOrder
         }
     }
 
