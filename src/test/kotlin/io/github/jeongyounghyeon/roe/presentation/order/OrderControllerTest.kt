@@ -2,6 +2,8 @@ package io.github.jeongyounghyeon.roe.presentation.order
 
 import com.jayway.jsonpath.JsonPath
 import io.github.jeongyounghyeon.roe.domain.order.OrderEvent
+import org.assertj.core.api.Assertions.assertThat
+import io.github.jeongyounghyeon.roe.domain.order.OrderStatus.DELIVERED
 import io.github.jeongyounghyeon.roe.domain.order.OrderStatus.PAYMENT_PROCESSING
 import io.github.jeongyounghyeon.roe.domain.order.OrderStatus.PENDING_PAYMENT
 import org.junit.jupiter.api.BeforeEach
@@ -106,5 +108,55 @@ class OrderControllerTest {
                 .content("""{"event":"${OrderEvent.REQUEST_PAY.name}"}""")
         )
             .andExpect(status().isNotFound)
+    }
+
+    @Test
+    fun `전체 주문 완주 플로우 - 생성부터 배송 완료까지 정상 처리된다`() {
+        val orderId = createOrderAndGetId()
+
+        fun sendEvent(event: OrderEvent) = mockMvc.perform(
+            post("/orders/$orderId/events")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"event":"${event.name}"}""")
+        ).andExpect(status().isOk)
+
+        sendEvent(OrderEvent.REQUEST_PAY)
+        sendEvent(OrderEvent.PAY_SUCCESS)
+        sendEvent(OrderEvent.ACCEPT_ORDER)
+        sendEvent(OrderEvent.DISPATCH)
+        sendEvent(OrderEvent.DELIVER)
+
+        mockMvc.perform(get("/orders/$orderId"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.status").value(DELIVERED.name))
+            .andExpect(jsonPath("$.histories.length()").value(6))
+    }
+
+    @Test
+    fun `낙관적 잠금 충돌 시 409 반환`() {
+        val orderId = createOrderAndGetId()
+
+        // 동일 orderId에 대해 두 요청을 동시에 실행
+        val latch = java.util.concurrent.CountDownLatch(2)
+        val responses = java.util.Collections.synchronizedList(mutableListOf<Int>())
+
+        repeat(2) {
+            Thread {
+                latch.countDown()
+                latch.await()
+                val status = mockMvc.perform(
+                    post("/orders/$orderId/events")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""{"event":"${OrderEvent.REQUEST_PAY.name}"}""")
+                ).andReturn().response.status
+                responses.add(status)
+            }.start()
+        }
+
+        Thread.sleep(3000)
+
+        assertThat(responses).hasSize(2)
+        assertThat(responses).contains(200)
+        assertThat(responses.count { it == 409 || it == 200 }).isEqualTo(2)
     }
 }

@@ -2,9 +2,11 @@ package io.github.jeongyounghyeon.roe.infrastructure.kafka
 
 import io.github.jeongyounghyeon.roe.domain.order.Order
 import io.github.jeongyounghyeon.roe.domain.order.OrderEvent
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.eq
 import org.mockito.Mock
@@ -26,7 +28,7 @@ class OrderKafkaEventPublisherTest {
     }
 
     @Test
-    fun `상태 전이 후 order_status_changed 토픽으로 이벤트가 발행된다`() {
+    fun `order_status_changed 토픽으로 발행된다`() {
         val order = Order.create()
 
         publisher.publish(order, OrderEvent.REQUEST_PAY)
@@ -36,5 +38,40 @@ class OrderKafkaEventPublisherTest {
             eq(order.id.toString()),
             any(String::class.java),
         )
+    }
+
+    @Test
+    fun `페이로드에 orderId, event, status 가 포함된다`() {
+        val order = Order.create()
+        val payloadCaptor = ArgumentCaptor.forClass(String::class.java)
+
+        publisher.publish(order, OrderEvent.PAY_SUCCESS)
+
+        verify(kafkaTemplate).send(
+            any(String::class.java),
+            any(String::class.java),
+            payloadCaptor.capture(),
+        )
+
+        val payload = payloadCaptor.value
+        assertThat(payload).contains(order.id.toString())
+        assertThat(payload).contains(OrderEvent.PAY_SUCCESS.name)
+        assertThat(payload).contains(order.status.name)
+    }
+
+    @Test
+    fun `orderId 를 메시지 키로 사용한다`() {
+        val order = Order.create()
+        val keyCaptor = ArgumentCaptor.forClass(String::class.java)
+
+        publisher.publish(order, OrderEvent.REQUEST_PAY)
+
+        verify(kafkaTemplate).send(
+            any(String::class.java),
+            keyCaptor.capture(),
+            any(String::class.java),
+        )
+
+        assertThat(keyCaptor.value).isEqualTo(order.id.toString())
     }
 }
