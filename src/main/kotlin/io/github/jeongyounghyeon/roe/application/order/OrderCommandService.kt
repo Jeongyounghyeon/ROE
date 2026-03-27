@@ -7,6 +7,7 @@ import io.github.jeongyounghyeon.roe.domain.order.OrderRepository
 import io.github.jeongyounghyeon.roe.domain.order.OrderStatus
 import io.github.jeongyounghyeon.roe.domain.order.exception.InvalidOrderStateTransitionException
 import io.github.jeongyounghyeon.roe.infrastructure.statemachine.OrderStateMachineActions.Companion.ORDER_HEADER_KEY
+import io.github.jeongyounghyeon.roe.infrastructure.statemachine.OrderStateMachineActions.Companion.REASON_HEADER_KEY
 import org.springframework.messaging.support.MessageBuilder
 import org.springframework.statemachine.StateMachine
 import org.springframework.statemachine.StateMachineEventResult.ResultType.ACCEPTED
@@ -23,7 +24,7 @@ class OrderCommandService(
 ) {
     fun createOrder(): Order = orderRepository.save(Order.create())
 
-    fun processEvent(orderId: UUID, event: OrderEvent): Order {
+    fun processEvent(orderId: UUID, event: OrderEvent, reason: String? = null): Order {
         val order = orderRepository.findById(orderId)
             ?: throw OrderNotFoundException(orderId)
 
@@ -32,6 +33,7 @@ class OrderCommandService(
             Mono.just(
                 MessageBuilder.withPayload(event)
                     .setHeader(ORDER_HEADER_KEY, order)
+                    .setHeader(REASON_HEADER_KEY, reason)
                     .build()
             )
         ).blockLast()
