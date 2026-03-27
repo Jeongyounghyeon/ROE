@@ -1,5 +1,6 @@
 package io.github.jeongyounghyeon.roe.presentation
 
+import io.github.jeongyounghyeon.roe.application.order.exception.LockAcquisitionException
 import io.github.jeongyounghyeon.roe.application.order.exception.OrderNotFoundException
 import io.github.jeongyounghyeon.roe.domain.order.exception.InvalidOrderStateTransitionException
 import org.springframework.http.HttpStatus
@@ -18,5 +19,10 @@ class GlobalExceptionHandler {
     @ExceptionHandler(InvalidOrderStateTransitionException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
     fun handleInvalidTransition(e: InvalidOrderStateTransitionException): Map<String, String?> =
+        mapOf("message" to e.message)
+
+    @ExceptionHandler(LockAcquisitionException::class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    fun handleLockAcquisitionFailure(e: LockAcquisitionException): Map<String, String?> =
         mapOf("message" to e.message)
 }

@@ -1,5 +1,6 @@
 package io.github.jeongyounghyeon.roe.application.order
 
+import io.github.jeongyounghyeon.roe.application.lock.DistributedLockManager
 import io.github.jeongyounghyeon.roe.application.order.exception.OrderNotFoundException
 import io.github.jeongyounghyeon.roe.domain.order.Order
 import io.github.jeongyounghyeon.roe.domain.order.OrderEvent
@@ -21,28 +22,31 @@ import java.util.UUID
 class OrderCommandService(
     private val orderRepository: OrderRepository,
     private val stateMachineFactory: StateMachineFactory<OrderStatus, OrderEvent>,
+    private val lockManager: DistributedLockManager,
 ) {
     fun createOrder(): Order = orderRepository.save(Order.create())
 
     fun processEvent(orderId: UUID, event: OrderEvent, reason: String? = null): Order {
-        val order = orderRepository.findById(orderId)
-            ?: throw OrderNotFoundException(orderId)
+        return lockManager.withLock("order:event:lock:$orderId") {
+            val order = orderRepository.findById(orderId)
+                ?: throw OrderNotFoundException(orderId)
 
-        val sm = restoreStateMachine(order.status)
-        val result = sm.sendEvent(
-            Mono.just(
-                MessageBuilder.withPayload(event)
-                    .setHeader(ORDER_HEADER_KEY, order)
-                    .setHeader(REASON_HEADER_KEY, reason)
-                    .build()
-            )
-        ).blockLast()
+            val sm = restoreStateMachine(order.status)
+            val result = sm.sendEvent(
+                Mono.just(
+                    MessageBuilder.withPayload(event)
+                        .setHeader(ORDER_HEADER_KEY, order)
+                        .setHeader(REASON_HEADER_KEY, reason)
+                        .build()
+                )
+            ).blockLast()
 
-        if (result?.resultType != ACCEPTED) {
-            throw InvalidOrderStateTransitionException(order.status, event)
+            if (result?.resultType != ACCEPTED) {
+                throw InvalidOrderStateTransitionException(order.status, event)
+            }
+
+            orderRepository.save(order)
         }
-
-        return orderRepository.save(order)
     }
 
     private fun restoreStateMachine(currentStatus: OrderStatus): StateMachine<OrderStatus, OrderEvent> {
