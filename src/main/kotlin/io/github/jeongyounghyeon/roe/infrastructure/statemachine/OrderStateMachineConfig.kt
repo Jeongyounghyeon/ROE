@@ -1,25 +1,9 @@
 package io.github.jeongyounghyeon.roe.infrastructure.statemachine
 
 import io.github.jeongyounghyeon.roe.domain.order.OrderEvent
-import io.github.jeongyounghyeon.roe.domain.order.OrderEvent.ACCEPT_ORDER
-import io.github.jeongyounghyeon.roe.domain.order.OrderEvent.CANCEL_REQUEST
-import io.github.jeongyounghyeon.roe.domain.order.OrderEvent.DELIVER
-import io.github.jeongyounghyeon.roe.domain.order.OrderEvent.DISPATCH
-import io.github.jeongyounghyeon.roe.domain.order.OrderEvent.PAY_FAIL
-import io.github.jeongyounghyeon.roe.domain.order.OrderEvent.PAY_SUCCESS
-import io.github.jeongyounghyeon.roe.domain.order.OrderEvent.REFUND_SUCCESS
-import io.github.jeongyounghyeon.roe.domain.order.OrderEvent.REQUEST_PAY
+import io.github.jeongyounghyeon.roe.domain.order.OrderEvent.*
 import io.github.jeongyounghyeon.roe.domain.order.OrderStatus
-import io.github.jeongyounghyeon.roe.domain.order.OrderStatus.CANCELED
-import io.github.jeongyounghyeon.roe.domain.order.OrderStatus.DELIVERED
-import io.github.jeongyounghyeon.roe.domain.order.OrderStatus.FAILED
-import io.github.jeongyounghyeon.roe.domain.order.OrderStatus.PAID
-import io.github.jeongyounghyeon.roe.domain.order.OrderStatus.PAYMENT_PROCESSING
-import io.github.jeongyounghyeon.roe.domain.order.OrderStatus.PENDING_PAYMENT
-import io.github.jeongyounghyeon.roe.domain.order.OrderStatus.PREPARING
-import io.github.jeongyounghyeon.roe.domain.order.OrderStatus.REFUNDED
-import io.github.jeongyounghyeon.roe.domain.order.OrderStatus.REFUNDING
-import io.github.jeongyounghyeon.roe.domain.order.OrderStatus.SHIPPED
+import io.github.jeongyounghyeon.roe.domain.order.OrderStatus.*
 import org.springframework.context.annotation.Configuration
 import org.springframework.statemachine.config.EnableStateMachineFactory
 import org.springframework.statemachine.config.StateMachineConfigurerAdapter
