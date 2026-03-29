@@ -157,8 +157,6 @@ class OrderControllerTest {
 
         Thread.sleep(3000)
 
-        assertThat(responses).hasSize(2)
-        assertThat(responses).contains(200)
-        assertThat(responses.count { it == 409 || it == 200 }).isEqualTo(2)
+        assertThat(responses).containsExactlyInAnyOrder(200, 409)
     }
 }
