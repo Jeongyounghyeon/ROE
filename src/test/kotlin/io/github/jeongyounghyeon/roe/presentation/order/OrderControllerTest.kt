@@ -20,7 +20,9 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPat
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import org.springframework.web.context.WebApplicationContext
+import java.util.Collections
 import java.util.UUID
+import java.util.concurrent.CountDownLatch
 
 @SpringBootTest(webEnvironment = MOCK)
 @ActiveProfiles("test")
@@ -137,8 +139,8 @@ class OrderControllerTest {
         val orderId = createOrderAndGetId()
 
         // 동일 orderId에 대해 두 요청을 동시에 실행
-        val latch = java.util.concurrent.CountDownLatch(2)
-        val responses = java.util.Collections.synchronizedList(mutableListOf<Int>())
+        val latch = CountDownLatch(2)
+        val responses = Collections.synchronizedList(mutableListOf<Int>())
 
         repeat(2) {
             Thread {

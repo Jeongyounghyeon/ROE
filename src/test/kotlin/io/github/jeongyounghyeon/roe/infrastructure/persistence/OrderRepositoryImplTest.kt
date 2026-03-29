@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
+import java.util.UUID
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -41,7 +42,7 @@ class OrderRepositoryImplTest {
 
     @Test
     fun `존재하지 않는 ID 조회 시 null 을 반환해야 한다`() {
-        val result = orderRepository.findById(java.util.UUID.randomUUID())
+        val result = orderRepository.findById(UUID.randomUUID())
 
         assertThat(result).isNull()
     }
