@@ -11,18 +11,16 @@ import java.time.LocalDateTime
 @Component
 @Profile("!test")
 class OrderKafkaEventPublisher(
-    private val kafkaTemplate: KafkaTemplate<String, String>,
+    private val kafkaTemplate: KafkaTemplate<String, OrderStatusChangedEvent>,
 ) : OrderDomainEventPublisher {
 
     override fun publish(order: Order, event: OrderEvent) {
-        val payload = """
-            {
-              "orderId": "${order.id}",
-              "event": "${event.name}",
-              "status": "${order.status.name}",
-              "occurredAt": "${LocalDateTime.now()}"
-            }
-        """.trimIndent()
+        val payload = OrderStatusChangedEvent(
+            orderId = order.id,
+            event = event.name,
+            status = order.status.name,
+            occurredAt = LocalDateTime.now(),
+        )
 
         kafkaTemplate.send(TOPIC, order.id.toString(), payload)
     }

@@ -18,7 +18,7 @@ import org.springframework.kafka.core.KafkaTemplate
 class OrderKafkaEventPublisherTest {
 
     @Mock
-    lateinit var kafkaTemplate: KafkaTemplate<String, String>
+    lateinit var kafkaTemplate: KafkaTemplate<String, OrderStatusChangedEvent>
 
     private lateinit var publisher: OrderKafkaEventPublisher
 
@@ -36,14 +36,14 @@ class OrderKafkaEventPublisherTest {
         verify(kafkaTemplate).send(
             eq("order.status.changed"),
             eq(order.id.toString()),
-            any(String::class.java),
+            any(OrderStatusChangedEvent::class.java),
         )
     }
 
     @Test
     fun `페이로드에 orderId, event, status 가 포함된다`() {
         val order = Order.create()
-        val payloadCaptor = ArgumentCaptor.forClass(String::class.java)
+        val payloadCaptor = ArgumentCaptor.forClass(OrderStatusChangedEvent::class.java)
 
         publisher.publish(order, OrderEvent.PAY_SUCCESS)
 
@@ -54,9 +54,9 @@ class OrderKafkaEventPublisherTest {
         )
 
         val payload = payloadCaptor.value
-        assertThat(payload).contains(order.id.toString())
-        assertThat(payload).contains(OrderEvent.PAY_SUCCESS.name)
-        assertThat(payload).contains(order.status.name)
+        assertThat(payload.orderId).isEqualTo(order.id)
+        assertThat(payload.event).isEqualTo(OrderEvent.PAY_SUCCESS.name)
+        assertThat(payload.status).isEqualTo(order.status.name)
     }
 
     @Test
@@ -69,7 +69,7 @@ class OrderKafkaEventPublisherTest {
         verify(kafkaTemplate).send(
             any(String::class.java),
             keyCaptor.capture(),
-            any(String::class.java),
+            any(OrderStatusChangedEvent::class.java),
         )
 
         assertThat(keyCaptor.value).isEqualTo(order.id.toString())
