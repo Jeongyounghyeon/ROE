@@ -1,8 +1,9 @@
 package io.github.jeongyounghyeon.roe.application.order
 
-import io.github.jeongyounghyeon.roe.application.event.OrderDomainEventPublisher
 import io.github.jeongyounghyeon.roe.application.lock.DistributedLockManager
 import io.github.jeongyounghyeon.roe.application.order.exception.OrderNotFoundException
+import io.github.jeongyounghyeon.roe.application.outbox.OrderEventRecordRepository
+import io.github.jeongyounghyeon.roe.domain.order.OrderEventRecord
 import io.github.jeongyounghyeon.roe.domain.order.Order
 import io.github.jeongyounghyeon.roe.domain.order.OrderEvent
 import io.github.jeongyounghyeon.roe.domain.order.OrderRepository
@@ -16,6 +17,7 @@ import org.springframework.statemachine.StateMachineEventResult.ResultType.ACCEP
 import org.springframework.statemachine.config.StateMachineFactory
 import org.springframework.statemachine.support.DefaultStateMachineContext
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import reactor.core.publisher.Mono
 import java.util.UUID
 
@@ -24,10 +26,11 @@ class OrderCommandService(
     private val orderRepository: OrderRepository,
     private val stateMachineFactory: StateMachineFactory<OrderStatus, OrderEvent>,
     private val lockManager: DistributedLockManager,
-    private val eventPublisher: OrderDomainEventPublisher,
+    private val orderEventRecordRepository: OrderEventRecordRepository,
 ) {
     fun createOrder(): Order = orderRepository.save(Order.create())
 
+    @Transactional
     fun processEvent(orderId: UUID, event: OrderEvent, reason: String? = null): Order {
         return lockManager.withLock("order:event:lock:$orderId") {
             val order = orderRepository.findById(orderId)
@@ -48,7 +51,13 @@ class OrderCommandService(
             }
 
             val savedOrder = orderRepository.save(order)
-            eventPublisher.publish(savedOrder, event)
+            orderEventRecordRepository.save(
+                OrderEventRecord(
+                    orderId = savedOrder.id,
+                    event = event.name,
+                    status = savedOrder.status.name,
+                )
+            )
             savedOrder
         }
     }
