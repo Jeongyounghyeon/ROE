@@ -1,6 +1,8 @@
 package io.github.jeongyounghyeon.roe.infrastructure.kafka
 
 import io.github.jeongyounghyeon.roe.infrastructure.persistence.OrderEventRecordJpaRepository
+import io.micrometer.core.instrument.Gauge
+import io.micrometer.core.instrument.MeterRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Profile
 import org.springframework.kafka.core.KafkaTemplate
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Service
 class OrderEventRecordRelayService(
     private val orderEventRecordJpaRepository: OrderEventRecordJpaRepository,
     private val kafkaTemplate: KafkaTemplate<String, OrderStatusChangedEvent>,
+    meterRegistry: MeterRegistry,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -19,11 +22,18 @@ class OrderEventRecordRelayService(
         const val TOPIC = "order.status.changed"
     }
 
+    init {
+        Gauge.builder("order.event_record.pending") {
+            orderEventRecordJpaRepository.countByPublishedAtIsNull().toDouble()
+        }
+            .description("Number of outbox event records not yet published to Kafka")
+            .register(meterRegistry)
+    }
+
     @Scheduled(fixedDelay = 1000)
     fun relay() {
         orderEventRecordJpaRepository.findByPublishedAtIsNull().forEach { outboxEvent ->
             try {
-                log.info(outboxEvent.toString())
                 kafkaTemplate.send(
                     TOPIC,
                     outboxEvent.orderId.toString(),

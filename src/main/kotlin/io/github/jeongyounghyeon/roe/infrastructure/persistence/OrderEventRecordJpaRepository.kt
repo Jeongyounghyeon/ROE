@@ -6,5 +6,6 @@ import java.util.UUID
 
 interface OrderEventRecordJpaRepository : JpaRepository<OrderEventRecord, UUID> {
     fun findByPublishedAtIsNull(): List<OrderEventRecord>
+    fun countByPublishedAtIsNull(): Long
     fun findByOrderId(orderId: UUID): List<OrderEventRecord>
 }
