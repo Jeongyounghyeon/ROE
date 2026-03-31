@@ -5,13 +5,14 @@ import io.github.jeongyounghyeon.roe.application.order.exception.LockAcquisition
 import io.github.jeongyounghyeon.roe.application.order.exception.OrderNotFoundException
 import io.github.jeongyounghyeon.roe.application.outbox.OrderEventRecordRepository
 import io.github.jeongyounghyeon.roe.domain.order.OrderEventRecord
-import io.github.jeongyounghyeon.roe.domain.order.Order
 import io.github.jeongyounghyeon.roe.domain.order.OrderEvent
 import io.github.jeongyounghyeon.roe.domain.order.OrderEvent.REQUEST_PAY
 import io.github.jeongyounghyeon.roe.domain.order.OrderRepository
 import io.github.jeongyounghyeon.roe.domain.order.OrderStatus
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
@@ -26,6 +27,7 @@ class OrderCommandServiceTest {
     @Mock lateinit var orderRepository: OrderRepository
     @Mock lateinit var stateMachineFactory: StateMachineFactory<OrderStatus, OrderEvent>
 
+    private val meterRegistry = SimpleMeterRegistry()
     private var capturedLockKey: String? = null
     private val savedOutboxEvents = mutableListOf<OrderEventRecord>()
 
@@ -45,10 +47,18 @@ class OrderCommandServiceTest {
         override fun save(record: OrderEventRecord) { savedOutboxEvents.add(record) }
     }
 
+    private lateinit var service: OrderCommandService
+    private lateinit var failingLockService: OrderCommandService
+
+    @BeforeEach
+    fun setUp() {
+        service = OrderCommandService(orderRepository, stateMachineFactory, executingLockManager, trackingOutboxRepository, meterRegistry)
+        failingLockService = OrderCommandService(orderRepository, stateMachineFactory, failingLockManager, trackingOutboxRepository, meterRegistry)
+    }
+
     @Test
     fun `processEvent 호출 시 올바른 키로 분산 락을 획득한다`() {
         val orderId = UUID.randomUUID()
-        val service = OrderCommandService(orderRepository, stateMachineFactory, executingLockManager, trackingOutboxRepository)
         `when`(orderRepository.findById(orderId)).thenReturn(null)
 
         assertThatThrownBy { service.processEvent(orderId, REQUEST_PAY) }
@@ -60,16 +70,14 @@ class OrderCommandServiceTest {
     @Test
     fun `락 획득 실패 시 LockAcquisitionException 이 전파된다`() {
         val orderId = UUID.randomUUID()
-        val service = OrderCommandService(orderRepository, stateMachineFactory, failingLockManager, trackingOutboxRepository)
 
-        assertThatThrownBy { service.processEvent(orderId, REQUEST_PAY) }
+        assertThatThrownBy { failingLockService.processEvent(orderId, REQUEST_PAY) }
             .isInstanceOf(LockAcquisitionException::class.java)
     }
 
     @Test
     fun `존재하지 않는 주문 처리 시 OrderNotFoundException 이 발생한다`() {
         val orderId = UUID.randomUUID()
-        val service = OrderCommandService(orderRepository, stateMachineFactory, executingLockManager, trackingOutboxRepository)
         `when`(orderRepository.findById(orderId)).thenReturn(null)
 
         assertThatThrownBy { service.processEvent(orderId, REQUEST_PAY) }
@@ -79,7 +87,6 @@ class OrderCommandServiceTest {
     @Test
     fun `주문을 찾지 못하면 이벤트 레코드가 저장되지 않는다`() {
         val orderId = UUID.randomUUID()
-        val service = OrderCommandService(orderRepository, stateMachineFactory, executingLockManager, trackingOutboxRepository)
         `when`(orderRepository.findById(orderId)).thenReturn(null)
 
         assertThatThrownBy { service.processEvent(orderId, REQUEST_PAY) }
