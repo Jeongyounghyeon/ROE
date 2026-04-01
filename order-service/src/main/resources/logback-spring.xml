@@ -2,6 +2,7 @@
 <configuration>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
     <springProperty name="appName" source="spring.application.name" defaultValue="app"/>
+    <springProperty name="hostname" source="HOSTNAME" defaultValue="localhost"/>
 
     <!-- Dev: 컬러 콘솔 + requestId 표시 -->
     <springProfile name="!prod">
@@ -12,9 +13,9 @@
         </appender>
 
         <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-            <file>logs/roe.log</file>
+            <file>logs/order-service/roe-${hostname}.log</file>
             <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-                <fileNamePattern>logs/roe.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+                <fileNamePattern>logs/order-service/roe-${hostname}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
                 <maxFileSize>10MB</maxFileSize>
                 <maxHistory>30</maxHistory>
                 <totalSizeCap>1GB</totalSizeCap>
@@ -34,7 +35,7 @@
     <springProfile name="prod">
         <appender name="STDOUT_JSON" class="ch.qos.logback.core.ConsoleAppender">
             <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-                <customFields>{"service":"${appName}"}</customFields>
+                <customFields>{"service":"${appName}","instance":"${hostname}"}</customFields>
                 <fieldNames>
                     <levelValue>[ignore]</levelValue>
                 </fieldNames>
@@ -42,15 +43,15 @@
         </appender>
 
         <appender name="FILE_JSON" class="ch.qos.logback.core.rolling.RollingFileAppender">
-            <file>logs/roe.log</file>
+            <file>logs/order-service/roe-${hostname}.log</file>
             <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-                <fileNamePattern>logs/roe.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+                <fileNamePattern>logs/order-service/roe-${hostname}.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
                 <maxFileSize>10MB</maxFileSize>
                 <maxHistory>30</maxHistory>
                 <totalSizeCap>1GB</totalSizeCap>
             </rollingPolicy>
             <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-                <customFields>{"service":"${appName}"}</customFields>
+                <customFields>{"service":"${appName}","instance":"${hostname}"}</customFields>
                 <fieldNames>
                     <levelValue>[ignore]</levelValue>
                 </fieldNames>

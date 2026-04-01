@@ -1,0 +1,41 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: order-service
+    static_configs:
+      - targets: [localhost]
+        labels:
+          service: order-service
+          __path__: /logs/order-service/*.log
+    pipeline_stages:
+      - json:
+          expressions:
+            level: level
+            orderId: orderId
+            requestId: requestId
+            traceId: traceId
+      - labels:
+          level:
+
+  - job_name: pg-service
+    static_configs:
+      - targets: [localhost]
+        labels:
+          service: pg-service
+          __path__: /logs/pg-service/*.log
+    pipeline_stages:
+      - json:
+          expressions:
+            level: level
+            orderId: orderId
+            traceId: traceId
+      - labels:
+          level:
