@@ -2,6 +2,7 @@ package io.github.jeongyounghyeon.pg.kafka
 
 import io.github.jeongyounghyeon.pg.client.OrderServiceClient
 import org.slf4j.LoggerFactory
+import org.slf4j.MDC
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.stereotype.Component
 
@@ -15,7 +16,12 @@ class OrderEventConsumer(
     fun consume(event: OrderStatusChangedEvent) {
         if (event.status != "PAYMENT_PROCESSING") return
 
-        log.info("결제 처리 시작: orderId={}", event.orderId)
-        orderServiceClient.processPayment(event.orderId)
+        try {
+            MDC.put("orderId", event.orderId.toString())
+            log.info("결제 처리 시작: orderId={}", event.orderId)
+            orderServiceClient.processPayment(event.orderId)
+        } finally {
+            MDC.clear()
+        }
     }
 }

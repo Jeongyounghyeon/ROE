@@ -6,11 +6,6 @@ spring:
     consumer:
       group-id: pg-service
       auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: "*"
-        spring.json.value.default.type: io.github.jeongyounghyeon.pg.kafka.OrderStatusChangedEvent
 
 server:
   port: 8081

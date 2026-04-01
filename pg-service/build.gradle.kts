@@ -32,6 +32,12 @@ dependencies {
     // Monitoring
     implementation("org.springframework.boot:spring-boot-starter-actuator")
 
+    // Structured Logging
+    implementation("net.logstash.logback:logstash-logback-encoder:8.0")
+
+    // Jackson
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
+
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
@@ -50,5 +56,13 @@ tasks.withType<Test> {
 }
 
 tasks.named<BootRun>("bootRun") {
+    jvmArgs("--sun-misc-unsafe-memory-access=allow")
+}
+
+tasks.register<BootRun>("bootRunProd") {
+    group = "application"
+    description = "Run with prod profile"
+    classpath = sourceSets["main"].runtimeClasspath
+    args("--spring.profiles.active=prod")
     jvmArgs("--sun-misc-unsafe-memory-access=allow")
 }

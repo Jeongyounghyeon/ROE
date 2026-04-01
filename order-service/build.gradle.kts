@@ -80,6 +80,14 @@ tasks.named<BootRun>("bootRun") {
     jvmArgs("--sun-misc-unsafe-memory-access=allow")
 }
 
+tasks.register<BootRun>("bootRunProd") {
+    group = "application"
+    description = "Run with prod profile"
+    classpath = sourceSets["main"].runtimeClasspath
+    args("--spring.profiles.active=prod")
+    jvmArgs("--sun-misc-unsafe-memory-access=allow")
+}
+
 allOpen {
     annotation("jakarta.persistence.Entity")
     annotation("jakarta.persistence.MappedSuperclass")

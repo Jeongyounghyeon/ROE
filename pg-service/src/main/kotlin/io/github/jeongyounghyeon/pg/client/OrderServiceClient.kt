@@ -25,6 +25,7 @@ class OrderServiceClient(
         restClient.post()
             .uri("/orders/$orderId/events")
             .header("Content-Type", "application/json")
+            .header("X-Request-Id", orderId.toString())
             .body(mapOf("event" to event))
             .retrieve()
             .toBodilessEntity()
