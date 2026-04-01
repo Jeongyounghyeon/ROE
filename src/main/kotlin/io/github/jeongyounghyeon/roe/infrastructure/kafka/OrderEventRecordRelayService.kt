@@ -46,8 +46,9 @@ class OrderEventRecordRelayService(
                 )
                 outboxEvent.markPublished()
                 orderEventRecordJpaRepository.save(outboxEvent)
+                log.debug("outbox 이벤트 발행 성공: outboxEventId=${outboxEvent.id}, orderId=${outboxEvent.orderId}")
             } catch (e: Exception) {
-                log.error("outbox 이벤트 발행 실패: outboxEventId=${outboxEvent.id}", e)
+                log.error("outbox 이벤트 발행 실패: outboxEventId=${outboxEvent.id}, orderId=${outboxEvent.orderId}", e)
             }
         }
     }

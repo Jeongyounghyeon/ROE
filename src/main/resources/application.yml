@@ -33,12 +33,6 @@ management:
   endpoint:
     health:
       show-details: always
-
-logging:
-  file:
-    name: logs/roe.log
-  logback:
-    rollingpolicy:
-      file-name-pattern: logs/roe.%d{yyyy-MM-dd}.%i.log
-      max-file-size: 10MB
-      max-history: 30
+  tracing:
+    sampling:
+      probability: 1.0
