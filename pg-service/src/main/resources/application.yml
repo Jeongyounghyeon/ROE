@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: pg-service
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: pg-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.value.default.type: io.github.jeongyounghyeon.pg.kafka.OrderStatusChangedEvent
+
+server:
+  port: 8081
+
+order-service:
+  url: http://localhost:8080
+
+pg:
+  payment:
+    success-rate: 1.0         # 0.0 ~ 1.0
+    processing-delay-ms: 500  # 결제 처리 시뮬레이션 지연 (ms)
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
